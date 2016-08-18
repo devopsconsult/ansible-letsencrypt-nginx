@@ -1,0 +1,6 @@
+---
+domain: 'debojit.xxx.in'
+deploy_user: 'debojit'
+letsencrypt_email: 'debojkakoti88@gmail.com'
+letsencrypt_domain_flags:
+  - "-d debojit.xxx.in"

@@ -1,0 +1,43 @@
+server {
+    # Enforce the use of HTTPS
+    listen 80 default_server;
+    server_name *.{{ domain }};
+    return 301 https://{{ domain }}$request_uri;
+}
+
+server {
+    listen 443 default_server ssl;
+
+    root /var/www/{{ domain }}/public;
+    index index.html index.htm;
+
+    access_log /var/log/nginx/{{ domain }}.log;
+    error_log  /var/log/nginx/{{ domain }}-error.log error;
+
+    server_name {{ domain }};
+
+    charset utf-8;
+
+
+    ssl_certificate           /etc/letsencrypt/live/{{ domain }}/fullchain.pem;
+    ssl_certificate_key       /etc/letsencrypt/live/{{ domain }}/privkey.pem;
+
+
+
+  
+    try_files $uri $uri/ ;
+
+    location / {
+        proxy_pass  http://127.0.0.1:8080;
+        proxy_redirect off;
+
+        proxy_set_header Host $host ;
+        proxy_set_header X-Real-IP $remote_addr ;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for ;
+    }
+
+
+    location = /favicon.ico { log_not_found off; access_log off; }
+    location = /robots.txt  { log_not_found off; access_log off; }
+
+}

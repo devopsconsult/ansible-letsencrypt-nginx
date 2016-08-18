@@ -1,0 +1,50 @@
+---
+- name: Add Nginx Repository
+  apt_repository: repo='ppa:nginx/stable' state=present
+  
+
+- name: Install Nginx
+  apt: pkg=nginx state=installed update_cache=true
+  notify:
+    - Start Nginx
+
+- name: Create Web root
+  file: dest=/var/www/{{ domain }}/public mode=775 state=directory owner=www-data group=www-data
+  ignore_errors: yes
+
+- name: Copy index.html
+  template: src=index.html.j2 dest=/var/www/{{ domain }}/public/index.html
+  notify:
+    - Reload Nginx
+
+# secure nginx pre usage steps
+- name: Disable Default Site
+  file: dest=/etc/nginx/sites-enabled/default state=absent
+  tags:
+    - vhost
+
+- name: change client_max_body_size in main nginx.conf
+  lineinfile: dest="/etc/nginx/nginx.conf" regexp="^\s*client_max_body_size" line="client_max_body_size {{nginx_client_max_body_size}};" insertafter="http {"
+  notify: Reload Nginx
+
+- name: change client_body_buffer_size in main nginx.conf
+  lineinfile: dest="/etc/nginx/nginx.conf" regexp="^\s*client_body_buffer_size" line="client_body_buffer_size {{nginx_client_body_buffer_size}};" insertafter="http {"
+  notify: Reload Nginx
+
+- name: change keepalive_timeout in main nginx.conf
+  lineinfile: dest="/etc/nginx/nginx.conf" regexp="^\s*keepalive_timeout" line="keepalive_timeout {{nginx_keepalive_timeout}};" insertafter="http {"
+  notify: Reload Nginx
+
+# secure nginx pre usage end
+
+- name: Add debojit.razorpay.in config
+  template: src={{ domain }}.j2 dest=/etc/nginx/sites-available/{{ domain }}.conf owner=root group=root
+  tags:
+    - vhost
+
+- name: Enable debojit.razorpay.in Site Config
+  file: src=/etc/nginx/sites-available/{{ domain }}.conf dest=/etc/nginx/sites-enabled/{{ domain }}.conf state=link
+  tags:
+    - vhost
+  notify:
+    - Reload Nginx
